@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 from i18nfield.forms import I18nFormField, I18nTextInput
 from i18nfield.strings import LazyI18nString
 
+from pretix.base.forms import SecretKeySettingsField
 from pretix.base.models import OrderPayment
 from pretix.base.payment import BasePaymentProvider, PaymentException
 from pretix.multidomain.urlreverse import build_absolute_uri, eventreverse
@@ -15,33 +16,6 @@ from pretix.multidomain.urlreverse import build_absolute_uri, eventreverse
 from .api import BTCPayAPI, BTCPayError, WEBHOOK_EVENTS
 
 logger = logging.getLogger(__name__)
-
-SECRET_REDACTED = "*****"
-
-
-class SecretWidget(forms.PasswordInput):
-    """PasswordInput that always renders the redacted placeholder when a value
-    is already stored, so the secret is never exposed in the form HTML."""
-
-    def format_value(self, value):
-        if value:
-            return SECRET_REDACTED
-        return super().format_value(value)
-
-
-class SecretKeyField(forms.CharField):
-    """A CharField that displays a redacted placeholder ('*****') when a value
-    is already stored, so the secret is never exposed in the form. Submitting
-    the form with the placeholder preserves the stored value."""
-
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("widget", SecretWidget(render_value=True))
-        super().__init__(*args, **kwargs)
-
-    def has_changed(self, initial, data):
-        if data == SECRET_REDACTED:
-            return False
-        return super().has_changed(initial, data)
 
 
 class BTCPayServer(BasePaymentProvider):
@@ -126,7 +100,7 @@ class BTCPayServer(BasePaymentProvider):
                 ),
                 (
                     "api_key",
-                    SecretKeyField(
+                    SecretKeySettingsField(
                         label=_("BTCPay Server API key"),
                         help_text=_(
                             "An API key with the permissions "
@@ -135,7 +109,6 @@ class BTCPayServer(BasePaymentProvider):
                             "btcpay.store.webhooks.canmodifywebhooks, limited "
                             "to the store receiving the payments."
                         ),
-                        required=True,
                     ),
                 ),
                 (
