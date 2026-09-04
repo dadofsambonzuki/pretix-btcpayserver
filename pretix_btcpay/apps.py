@@ -11,7 +11,7 @@ class BTCPayAppConfig(PluginConfig):
         author = "Nathan Day"
         description = "Pay with Bitcoin (Lightning / on-chain) via BTCPay Server"
         visible = True
-        version = "0.1.0"
+        version = "0.1.1"
         category = "PAYMENT"
 
     def ready(self):
