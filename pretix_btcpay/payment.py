@@ -203,7 +203,24 @@ class BTCPayServer(BasePaymentProvider):
     def checkout_prepare(self, request, cart) -> bool:
         return True
 
-    def execute_payment(self, request, payment: OrderPayment):
+    def _invoice(self, payment: OrderPayment):
+        """
+        Return the invoice id currently stored on the payment, creating a new
+        BTCPay invoice (and registering the store webhook if needed) on demand
+        when none exists yet.
+
+        pretix sends the order-placed (and payment reminder) emails before it
+        calls ``execute_payment``, so at email render time the payment has not
+        had an invoice created for it yet. Creating it lazily here guarantees
+        the payment link embedded in those emails is always valid instead of
+        degrading to a broken ``/i/None`` URL.
+        """
+        invoice_id = payment.info_data.get("invoice_id")
+        if invoice_id:
+            return invoice_id
+        return self._create_invoice(payment)
+
+    def _create_invoice(self, payment: OrderPayment):
         order_url = eventreverse(
             self.event,
             "presale:event.order",
@@ -212,25 +229,16 @@ class BTCPayServer(BasePaymentProvider):
                 "secret": payment.order.secret,
             },
         )
-        try:
-            self._ensure_webhook()
-            invoice = self.client.create_invoice(
-                str(self.settings.store_id),
-                amount=str(payment.amount),
-                currency=str(self.event.currency),
-                order_id=payment.order.code,
-                metadata={"pretixPaymentId": payment.pk},
-                redirect_url=order_url,
-                expiry_minutes=int(self.settings.get("expiry", as_type=int) or 30),
-            )
-        except BTCPayError:
-            logger.exception("BTCPay: could not create invoice")
-            raise PaymentException(
-                _(
-                    "We had trouble creating your payment. Please try again "
-                    "and get in touch with us if this problem persists."
-                )
-            )
+        self._ensure_webhook()
+        invoice = self.client.create_invoice(
+            str(self.settings.store_id),
+            amount=str(payment.amount),
+            currency=str(self.event.currency),
+            order_id=payment.order.code,
+            metadata={"pretixPaymentId": payment.pk},
+            redirect_url=order_url,
+            expiry_minutes=int(self.settings.get("expiry", as_type=int) or 30),
+        )
         payment.info_data = {
             "invoice_id": invoice["id"],
             "checkout_link": invoice.get("checkoutLink", ""),
@@ -240,7 +248,20 @@ class BTCPayServer(BasePaymentProvider):
             "pretix_btcpay.invoice.created",
             data={"invoice_id": invoice["id"]},
         )
-        return self.client.url + "/i/" + invoice["id"]
+        return invoice["id"]
+
+    def execute_payment(self, request, payment: OrderPayment):
+        try:
+            invoice_id = self._invoice(payment)
+        except BTCPayError:
+            logger.exception("BTCPay: could not create invoice")
+            raise PaymentException(
+                _(
+                    "We had trouble creating your payment. Please try again "
+                    "and get in touch with us if this problem persists."
+                )
+            )
+        return self.client.url + "/i/" + invoice_id
 
     def payment_pending_render(self, request, payment: OrderPayment) -> str:
         template = get_template("pretix_btcpay/pending.html")
@@ -250,7 +271,6 @@ class BTCPayServer(BasePaymentProvider):
             "settings": self.settings,
             "order": payment.order,
             "payment": payment,
-            "checkout_link": payment.info_data.get("checkout_link"),
             "status_url": eventreverse(
                 self.event,
                 "plugins:pretix_btcpay:status",
@@ -260,13 +280,35 @@ class BTCPayServer(BasePaymentProvider):
                 },
             ),
         }
+        if payment.state in (
+            OrderPayment.PAYMENT_STATE_CREATED,
+            OrderPayment.PAYMENT_STATE_PENDING,
+        ):
+            try:
+                invoice_id = self._invoice(payment)
+            except BTCPayError:
+                invoice_id = payment.info_data.get("invoice_id")
+            ctx["checkout_link"] = (
+                payment.info_data.get("checkout_link")
+                or (self.client.url + "/i/" + invoice_id if invoice_id else None)
+            )
+        else:
+            ctx["checkout_link"] = None
         return template.render(ctx)
 
     def order_pending_mail_render(self, order, payment: OrderPayment) -> str:
-        checkout_link = payment.info_data.get("checkout_link")
-        if not checkout_link:
+        try:
+            invoice_id = self._invoice(payment)
+        except BTCPayError:
             invoice_id = payment.info_data.get("invoice_id")
+        checkout_link = payment.info_data.get("checkout_link")
+        if not checkout_link and invoice_id:
             checkout_link = self.client.url + "/i/" + invoice_id
+        if not checkout_link:
+            return _(
+                "Your Bitcoin / Lightning payment is still being prepared. "
+                "Please return to your order and choose how to pay."
+            )
         return _("To pay for your order, please visit the following page: {url}").format(
             url=checkout_link
         )
