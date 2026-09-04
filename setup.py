@@ -14,7 +14,7 @@ The customer pays on the BTCPay checkout page hosted by your BTCPay Server insta
     author="Nathan Day",
     author_email="nathan@day.ag",
     url="https://github.com/dadofsambonzuki/pretix-btcpayserver",
-    license="Apache License 2.0",
+    license="MIT",
     install_requires=["django>=4", "i18nfield>=0.6", "requests>=2"],
     packages=find_packages(exclude=["tests", "tests.*"]),
     include_package_data=True,
