@@ -1,0 +1,29 @@
+{% load i18n %}
+<div class="alert alert-info">
+    <p>{% trans "Your payment is still pending." %}</p>
+    <p>
+        <a class="btn btn-primary" href="{{ checkout_link }}" target="_blank" rel="noopener">
+            {% trans "Open payment page" %}
+        </a>
+    </p>
+    <p class="text-muted">
+        {% trans "The payment page will show you a QR code for the Lightning Network and, if enabled, an on-chain address. This page refreshes automatically once the payment arrives." %}
+    </p>
+</div>
+<script>
+(function () {
+    var statusUrl = "{{ status_url|escapejs }}";
+    setInterval(function () {
+        fetch(statusUrl, {cache: "no-store"})
+            .then(function (r) {
+                return r.json();
+            })
+            .then(function (d) {
+                if (d && d.paid === true) {
+                    window.location.reload();
+                }
+            })
+            .catch(function () {});
+    }, 5000);
+})();
+</script>

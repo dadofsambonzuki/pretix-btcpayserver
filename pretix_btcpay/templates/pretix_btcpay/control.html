@@ -1,0 +1,17 @@
+{% load i18n %}
+{% if invoice_id %}
+    <dl class="dl-horizontal">
+        <dt>{% trans "BTCPay invoice" %}</dt>
+        <dd>{{ invoice_id }}</dd>
+        {% if status %}
+            <dt>{% trans "Status" %}</dt>
+            <dd>{{ status.status }}</dd>
+            <dt>{% trans "Amount" %}</dt>
+            <dd>{{ status.amount }} {{ status.currency }}</dd>
+            <dt>{% trans "Paid" %}</dt>
+            <dd>{{ status.paidAmount }} {{ status.currency }}</dd>
+        {% endif %}
+    </dl>
+{% else %}
+    <p>{% trans "No BTCPay invoice has been created for this payment yet." %}</p>
+{% endif %}
