@@ -17,6 +17,9 @@ The customer pays on the BTCPay checkout page hosted by your BTCPay Server insta
     license="MIT",
     install_requires=["django>=4", "i18nfield>=0.6", "requests>=2"],
     packages=find_packages(exclude=["tests", "tests.*"]),
+    package_data={
+        "pretix_btcpay": ["templates/pretix_btcpay/*.html"],
+    },
     include_package_data=True,
     entry_points="""
 [pretix.plugin]
