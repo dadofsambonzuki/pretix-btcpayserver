@@ -1,4 +1,4 @@
-from setuptools import find_packages, setup
+from setuptools import find_namespace_packages, setup
 
 setup(
     name="pretix-btcpayserver",
@@ -16,7 +16,7 @@ The customer pays on the BTCPay checkout page hosted by your BTCPay Server insta
     url="https://github.com/dadofsambonzuki/pretix-btcpayserver",
     license="MIT",
     install_requires=["django>=4", "i18nfield>=0.6", "requests>=2"],
-    packages=find_packages(exclude=["tests", "tests.*"]),
+    packages=find_namespace_packages(exclude=["tests", "tests.*"]),
     package_data={
         "pretix_btcpay": ["templates/pretix_btcpay/*.html"],
     },
