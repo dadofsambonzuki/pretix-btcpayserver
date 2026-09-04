@@ -1,14 +1,15 @@
-from django.apps import AppConfig
+from pretix.base.plugins import PluginConfig
 
 
-class PluginConfig(AppConfig):
-    default_auto_field = "django.db.models.BigAutoField"
+class BTCPayAppConfig(PluginConfig):
     name = "pretix_btcpay"
+    verbose_name = "BTCPay Server"
+    default = True
 
     class PretixPluginMeta:
-        name = "pretix BTCPay Server"
+        name = "BTCPay Server"
         author = "Nathan Day"
-        description = "Pay with Bitcoin (Lightning / on-chain) via BTCPay Server (Greenfield API)"
+        description = "Pay with Bitcoin (Lightning / on-chain) via BTCPay Server"
         visible = True
         version = "0.1.0"
         category = "PAYMENT"

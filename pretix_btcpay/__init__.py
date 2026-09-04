@@ -7,9 +7,9 @@ except ImportError:
 
 
 class PretixPluginMeta:
-    name = "pretix BTCPay Server"
+    name = "BTCPay Server"
     author = "Nathan Day"
-    description = "Pay with Bitcoin (Lightning / on-chain) via BTCPay Server (Greenfield API)"
+    description = "Pay with Bitcoin (Lightning / on-chain) via BTCPay Server"
     visible = True
     version = __version__
     category = "PAYMENT"

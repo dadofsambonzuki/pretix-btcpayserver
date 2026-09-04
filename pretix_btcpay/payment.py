@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 class BTCPayServer(BasePaymentProvider):
     identifier = "btcpay_greenfield"
-    verbose_name = _("BTCPay Server (Bitcoin / Lightning)")
+    verbose_name = _("BTCPay Server")
     execute_payment_needs_user = True
     abort_pending_allowed = True
 
