@@ -11,7 +11,7 @@ from i18nfield.strings import LazyI18nString
 from pretix.base.forms import SecretKeySettingsField
 from pretix.base.models import OrderPayment
 from pretix.base.payment import BasePaymentProvider, PaymentException
-from pretix.multidomain.urlreverse import build_absolute_uri, eventreverse
+from pretix.multidomain.urlreverse import eventreverse, eventreverse_absolute
 
 from .api import BTCPayAPI, BTCPayError, WEBHOOK_EVENTS
 
@@ -49,7 +49,7 @@ class BTCPayServer(BasePaymentProvider):
 
     @property
     def webhook_url(self) -> str:
-        return build_absolute_uri(self.event, "plugins:pretix_btcpay:webhook")
+        return eventreverse_absolute(self.event, "plugins:pretix_btcpay:webhook")
 
     def _ensure_webhook(self):
         """Create (or refresh) the store webhook and store its id and secret
@@ -221,7 +221,7 @@ class BTCPayServer(BasePaymentProvider):
         return self._create_invoice(payment)
 
     def _create_invoice(self, payment: OrderPayment):
-        order_url = eventreverse(
+        order_url = eventreverse_absolute(
             self.event,
             "presale:event.order",
             kwargs={
